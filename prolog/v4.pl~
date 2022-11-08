@@ -1,0 +1,129 @@
+:-dynamic contador/1.%guarda resultado consulta 1
+:-dynamic tgrupos/1.%total de grupos consulta 2
+:-dynamic tsizes/1.%lista de tamagnos consulta 2
+:-dynamic gcoords/1.%coords de cada grupo consulta 2/3
+:-dynamic coords/1.%coords de todos los grupos consulta 2/3
+:-dynamic conectado/2.
+
+contador(0).
+tsizes([]).
+tgrupos(0).
+gcoords([]).
+coords([]).
+
+conectado(casilla(0,0,1), casilla(1,0,1)).
+conectado(casilla(0,0,1), casilla(0,1,1)).
+
+conectado(casilla(1,0,1), casilla(2,0,0)).
+conectado(casilla(1,0,1), casilla(1,1,0)).
+
+conectado(casilla(2,0,0), casilla(2,1,1)).
+%-----------------------------------------------
+conectado(casilla(0,1,1), casilla(1,1,0)).
+conectado(casilla(0,1,1), casilla(0,2,1)).
+
+conectado(casilla(1,1,0), casilla(2,1,1)).
+conectado(casilla(1,1,0), casilla(1,2,0)).
+
+conectado(casilla(2,1,1), casilla(2,2,0)).
+%-----------------------------------------------
+conectado(casilla(0,2,1), casilla(1,2,0)).
+conectado(casilla(1,2,0), casilla(2,2,0)).
+%-----------------------------------------------
+camino(Cx,Cy, Cx1, Cy1):-
+    conectado(casilla(Cx,Cy,1), casilla(Cx1,Cy1,1));
+    conectado(casilla(Cx1,Cy1,1), casilla(Cx,Cy,1)).
+
+agregar(X, L, [X|L]).
+
+tamagno2(Cx, Cy, Ruta, Res):-
+    contador(X),
+    N is X+1,
+    retractall(contador(_)),
+    assert(contador(N)),
+    gcoords(Coords),
+    agregar([Cx|Cy], Coords, Lnueva),
+    retractall(gcoords(_)),
+    assert(gcoords(Lnueva)),
+    camino(Cx,Cy,Cx1,Cy1),
+    not(member([Cx1|Cy1],Ruta)),
+    tamagno2(Cx1,Cy1, [[Cx|Cy]|Ruta],Res).
+
+tamagno2(_,_,[],_).
+
+%c1: consulta 1
+c1(Cx,Cy,0,[]):-
+    conectado(casilla(Cx,Cy,0),_);
+    conectado(_,casilla(Cx,Cy,0)),!.
+
+c1(Cx,Cy,N, Gcoords):-
+    retractall(contador(_)),
+    assert(contador(0)),
+    tamagno2(Cx,Cy,[],_),
+    contador(X),
+    N is X,
+    retractall(contador(_)),
+    assert(contador(0)),
+    gcoords(Gcoords),
+    retractall(gcoords(_)),
+    assert(gcoords([])).
+
+
+%c2: consulta 2
+
+c_2_3(Cx,Cy,Cx1,Cy1, T, S, C):-
+    retractall(contador(_)),
+    assert(contador(0)),
+    retractall(tsizes(_)),
+    assert(tsizes([])),
+    retractall(gcoords(_)),
+    assert(gcoords([])),
+    retractall(coords(_)),
+    assert(coords([])),
+    retractall(tgrupos(_)),
+    assert(tgrupos(0)),
+    recorre(Cx,Cy,Cx1,Cy1),
+    tgrupos(T),
+    tsizes(S),
+    coords(C),!.
+
+
+verifica(T, C):-
+    (
+    Cero is 0,
+    not(T=Cero),
+    tsizes(Sizes),
+    not(member(T,Sizes)),
+    agregar(T, Sizes, Nsizes),
+    coords(Coords1),
+    not(member(C,Coords1)),
+    agregar(C, Coords1, Coords),
+    retractall(coords(_)),
+    assert(coords(Coords)),
+    retractall(tsizes(_)),
+    assert(tsizes(Nsizes)),
+    tgrupos(Tg),
+    N is Tg+1,
+    retractall(tgrupos(_)),
+    assert(tgrupos(N)));
+    (
+        _ is 4
+
+    ).
+
+
+recorre(A,_,A,_).
+
+recorre(Cx,Cy,Cx1,Cy1):-
+    recorre1(Cx,Cy,Cy1),
+    A is Cx+1,
+    recorre(A,Cy,Cx1,Cy1),!.
+
+recorre1(_,A,A).
+
+recorre1(Cx,Cy,Cy1):-
+    c1(Cx,Cy,T,C),
+    verifica(T, C),
+    B is Cy+1,
+    recorre1(Cx,B,Cy1).
+
